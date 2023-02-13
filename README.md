@@ -168,7 +168,7 @@ jcli : smppccm -a
 > host 196.201.213.135
 > port 2775
 > username sozuriSMPP
-> password Zain@124
+> password Safc@124
 > submit_throughput 20
 con_fail_delay 10
 dlr_expiry 86400
@@ -210,7 +210,7 @@ add http connector for MO
 --------------------------
 httpccm -a
 Adding a new Httpcc: (ok: save, ko: exit)
-> url http://10.0.0.131/receive-sms/mo
+> url https://sozuri.net/receive-sms/mo
 > method GET
 > cid SOZURI_HTTP_MO_01
 > ok
@@ -220,7 +220,7 @@ start connectors
 ---------------------
 smppccm -1 AIRTEL_CONNECTOR
 smppccm -1 SAFARICOM_CONNECTOR
-smppccm -1 SOZURI_HTTP_MO_01
+httpccm -1 SOZURI_HTTP_MO_01
 
 
 check
@@ -228,6 +228,93 @@ check
 smppccm --list
 httpccm -s HTTP-01
 httpccm -l
+
+
+
+create group
+---------------
+group -a
+Adding a new Group: (ok: save, ko: exit)
+> gid ict
+> ok
+
+add users
+----------
+
+smpp MT sender/user
+------------------
+user -a
+Adding a new User: (ok: save, ko: exit)
+> username foo
+> password bar
+> gid ict
+> uid foo
+> smpps_cred authorization bind yes
+> smpps_cred quota max_bindings 2
+> mt_messaging_cred valuefilter src_addr ^JASMIN$
+> mt_messaging_cred valuefilter dst_addr ^JASMIN$
+> mt_messaging_cred quota balance 44.2
+> mt_messaging_cred quota sms_count none
+> mt_messaging_cred quota smpps_throughput 2
+> smpps_cred authorization bind yes
+> smpps_cred quota max_bindings 2
+> ok
+
+
+user -a
+Adding a new User: (ok: save, ko: exit)
+> username sozurismppc
+> password barizi
+> gid ict
+> uid sozurismppc
+> mt_messaging_cred valuefilter src_addr ^JASMIN$
+> mt_messaging_cred quota balance 44.2
+> mt_messaging_cred quota sms_count none
+> mt_messaging_cred quota smpps_throughput 20
+> ok
+
+
+
+Add FILTERS:
+--------------------
+sozurimosmppf
+sozurimohttpf
+sozurimtsmppf
+airtelmtsmppf
+
+SourceAddrFilter
+----------------------------------
+jcli : filter -a
+Adding a new Filter: (ok: save, ko: exit)
+> type sourceaddrfilter
+> source_addr ^201356\d+
+> fid sozurimosmppf
+> ok
+
+
+jcli : filter -a
+Adding a new Filter: (ok: save, ko: exit)
+> type sourceaddrfilter
+> source_addr ^201303\d+
+> fid sozurimohttpf
+> ok
+
+
+jcli : filter -a
+Adding a new Filter: (ok: save, ko: exit)
+> type sourceaddrfilter
+> source_addr ^Sozuri$
+#> destination_addr ^25472\d+
+> fid sozurimtsmppf
+> ok
+
+jcli : filter -a
+Adding a new Filter: (ok: save, ko: exit)
+> type sourceaddrfilter
+#> source_addr ^Sozuri$
+> destination_addr ^25473\d+
+> fid airtelmtsmppf
+> ok
 
 
 
@@ -244,8 +331,8 @@ Adding a new MO Route: (ok: save, ko: exit)
 jasmin.routing.Routes.StaticMORoute arguments:
 filters, connector
 > order 15
-> filters sozuri_mo_smpp_filter_1
-> connector smpps(sozuri_smpp_customer)   #project here
+> filters sozurimosmppf
+> connector smpps(sozurismppc)   #project here
 > ok
 
 
@@ -259,7 +346,7 @@ Adding a new MO Route: (ok: save, ko: exit)
 jasmin.routing.Routes.StaticMORoute arguments:
 filters, connector
 > order 10
-> filters sozuri_mo_http_filter_1
+> filters sozurimohttpf
 > connector http(SOZURI_HTTP_MO_01)
 > ok
 
@@ -273,7 +360,7 @@ Adding a new MT Route: (ok: save, ko: exit)
 > type StaticMTRoute
 jasmin.routing.Routes.StaticMTRoute arguments:
 filters, connector
-> filters safaricom_mt_smpp_filter_1
+> filters sozurimtsmppf
 > order 10
 > connector smppc(SAFARICOM_CONNECTOR)
 > rate 0.0
@@ -287,96 +374,12 @@ Adding a new MT Route: (ok: save, ko: exit)
 > type StaticMTRoute
 jasmin.routing.Routes.StaticMTRoute arguments:
 filters, connector
-> filters airtel_mt_smpp_filter_1
+> filters airtelmtsmppf
 > order 10
 > connector smppc(AIRTEL_CONNECTOR)
 > rate 0.0
 > ok
 
-
-
-create group
----------------
-group -a
-Adding a new Group: (ok: save, ko: exit)
-> gid marketing
-> ok
-
-
-smpp MT sender/user
-------------------
-user -a
-Adding a new User: (ok: save, ko: exit)
-> username foo
-> password bar
-> gid marketing
-> uid foo
-> smpps_cred authorization bind yes
-> smpps_cred quota max_bindings 2
-> mt_messaging_cred valuefilter src_addr ^JASMIN$
-> mt_messaging_cred valuefilter dst_addr ^JASMIN$
-> mt_messaging_cred quota balance 44.2
-> mt_messaging_cred quota sms_count none
-> mt_messaging_cred quota smpps_throughput 2
-> smpps_cred authorization bind yes
-> smpps_cred quota max_bindings 2
-> ok
-
-
-user -a
-Adding a new User: (ok: save, ko: exit)
-> username sozuri_smpp_customer
-> password bar
-> gid marketing
-> uid sozuri_smpp_customer
-> mt_messaging_cred valuefilter src_addr ^JASMIN$
-> mt_messaging_cred quota balance 44.2
-> mt_messaging_cred quota sms_count none
-> mt_messaging_cred quota smpps_throughput 2
-> ok
-
-
-
-FILTERS:
---------------------
-sozuri_mo_smpp_filter_1
-sozuri_mo_http_filter_1
-safaricom_mt_smpp_filter_1
-airtel_mt_smpp_filter_1
-
-SourceAddrFilter
-----------------------------------
-jcli : filter -a
-Adding a new Filter: (ok: save, ko: exit)
-> type sourceaddrfilter
-> source_addr ^201356\d+
-> fid sozuri_mo_smpp_filter_1
-> ok
-
-
-jcli : filter -a
-Adding a new Filter: (ok: save, ko: exit)
-> type sourceaddrfilter
-> source_addr ^201303\d+
-> fid sozuri_mo_http_filter_1
-> ok
-
-
-jcli : filter -a
-Adding a new Filter: (ok: save, ko: exit)
-> type sourceaddrfilter
-> source_addr ^Sozuri$
-#> destination_addr ^25472\d+
-> fid safaricom_mt_smpp_filter_1
-> ok
-
-jcli : filter -a
-Adding a new Filter: (ok: save, ko: exit)
-> type sourceaddrfilter
-#> source_addr ^Sozuri$
-> destination_addr ^25473\d+
-> fid airtel_mt_smpp_filter_1
-> ok
 
 
 
